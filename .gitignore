@@ -163,3 +163,5 @@ data/negative/*
 data/positive/*
 data/labelled/*
 data/Hotel_Reviews.csv
+
+config.json
