@@ -161,7 +161,7 @@ cython_debug/
 
 data/negative/*
 data/positive/*
-data/labelled/*
+data/labelled/**/*.json
 data/Hotel_Reviews.csv
 
 config.json
