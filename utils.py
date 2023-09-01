@@ -1,6 +1,9 @@
 import json
 import random
 import os
+from torch.utils.data import Dataset
+from torch import Tensor, device
+import numpy as np
 
 _comments_to_ignore = set(['No Positive', 'No Negative', 'All', 'Everything', 'everything', 'Nothing', 'nothing'])
 ASPECTS = [
@@ -42,7 +45,7 @@ def vec_to_aspect(aspect_vec: list[float]) -> dict[str, float]:
     return result_aspect
 
 
-def import_all_training_data() -> (list[str], list[list[float]]):
+def import_all_training_data() -> tuple[list[str], np.ndarray]:
     reviews: list[dict[str, any]] = []
     with open('./data/labelled/pos/labelled.json', 'r') as pos_json:
         reviews.extend(json.load(pos_json))
@@ -56,7 +59,7 @@ def import_all_training_data() -> (list[str], list[list[float]]):
         comments.append(labelled_entry['comment'])
         label_vecs.append(aspect_to_vec(labelled_entry['labels']))
     
-    return (comments, label_vecs)
+    return (comments, np.array(label_vecs))
 
 
 def import_random_test_data() -> list[str]:
@@ -74,3 +77,19 @@ def import_random_test_data() -> list[str]:
     _shuffle(comments)
 
     return comments
+
+class CommentDataSet(Dataset):
+    def __init__(self, xSet: Tensor, ySet: Tensor) -> None:
+        super().__init__()
+
+        gpu = device(0)
+
+        self.x = xSet.to(gpu)
+        self.y = ySet.to(gpu)
+        self.n_sample = len(xSet)
+
+    def __getitem__(self, index) -> tuple[Tensor, Tensor]:
+        return self.x[index], self.y[index]
+    
+    def __len__(self):
+        return self.n_sample
