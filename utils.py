@@ -72,9 +72,13 @@ def import_random_test_data() -> list[str]:
 
     comments: list[str] = []
     with open(positive_path) as pos_json:
-        comments.extend(json.load(pos_json))
+        for comment in json.load(pos_json):
+            if should_ignore(comment): continue
+            comments.append(comment)
     with open(negative_path) as neg_json:
-        comments.extend(json.load(neg_json))
+        for comment in json.load(neg_json):
+            if should_ignore(comment): continue
+            comments.append(comment)
     _shuffle(comments)
 
     return comments
