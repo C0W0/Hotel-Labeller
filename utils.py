@@ -16,6 +16,7 @@ ASPECTS = [
     'Parking',
     'Security',
 ]
+GPU = device(0)
 
 def should_ignore(comment: str) -> bool:
     return comment in _comments_to_ignore
@@ -79,17 +80,17 @@ def import_random_test_data() -> list[str]:
     return comments
 
 class CommentDataSet(Dataset):
-    def __init__(self, xSet: Tensor, ySet: Tensor) -> None:
+    def __init__(self, input_ids: Tensor, attention_mask: Tensor, labels: Tensor) -> None:
         super().__init__()
 
-        gpu = device(0)
+        self.x = input_ids.to(GPU)
+        self.masks = attention_mask.to(GPU)
+        self.y = labels.to(GPU)
+        
+        self.n_sample = len(labels)
 
-        self.x = xSet.to(gpu)
-        self.y = ySet.to(gpu)
-        self.n_sample = len(xSet)
-
-    def __getitem__(self, index) -> tuple[Tensor, Tensor]:
-        return self.x[index], self.y[index]
+    def __getitem__(self, index) -> tuple[tuple[Tensor], Tensor]:
+        return (self.x[index], self.masks[index]), self.y[index]
     
     def __len__(self):
         return self.n_sample
