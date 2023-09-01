@@ -1,10 +1,9 @@
 import json
 import os
 import openai
+from utils import should_ignore
 
 def label(api_key: str, label_folder: str, main_instruction: str):
-    useless_comments = set(['No Positive', 'No Negative', 'All', 'Everything', 'everything', 'Nothing', 'nothing'])
-
     label_dir = os.path.join(os.getcwd(), 'data', 'labelled', label_folder)
     comment_list: list[str] = []
 
@@ -12,7 +11,7 @@ def label(api_key: str, label_folder: str, main_instruction: str):
         if file_name == 'labelled.json': continue
         with open(os.path.join(label_dir, file_name), 'r') as comments_json:
             for comment in json.load(comments_json):
-                if comment in useless_comments: continue
+                if should_ignore(comment): continue
                 comment_list.append(f"\"{comment}\"")
 
     comment_clusters: list[str] = []
