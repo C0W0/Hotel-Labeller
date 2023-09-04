@@ -12,9 +12,8 @@ class CommentSentimentModel(torch.nn.Module):
     def forward(self, input_ids, attention_mask):
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask).pooler_output
         aspect_scores: torch.Tensor = self.aspect_output(bert_output)
-        aspect_scores.relu_()
+        aspect_scores = (torch.selu(aspect_scores)+1.5)/3
         return aspect_scores
-        # return bert_output
 
 MODEL_NAME = 'bert-base-uncased'
 
@@ -52,7 +51,7 @@ def train():
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.00005)
     loss_fn = torch.nn.MSELoss()
 
-    for epoch in range(40):
+    for epoch in range(50):
         for (input_ids, attention_mask), label in dataloader:
             aspect_scores = model(input_ids, attention_mask)
             loss = loss_fn(aspect_scores, label)
@@ -60,7 +59,7 @@ def train():
             optimizer.step()
             optimizer.zero_grad()
         
-        print(f'{epoch} / 40')
+        print(f'{epoch} / 50')
 
 
 train()
@@ -68,3 +67,6 @@ train()
 test_data = import_random_test_data()
 for _ in range(10):
     apply_model(pick_random(test_data))
+
+# storage
+torch.save(model, 'model1.pt')
