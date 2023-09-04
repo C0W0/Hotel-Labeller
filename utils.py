@@ -16,7 +16,7 @@ ASPECTS = [
     'Parking',
     'Security',
 ]
-GPU = device(0)
+GPU = device('cuda')
 
 def should_ignore(comment: str) -> bool:
     return comment in _comments_to_ignore
