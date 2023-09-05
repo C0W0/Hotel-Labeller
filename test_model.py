@@ -1,7 +1,7 @@
-from model import tokenizer, CommentSentimentModel, apply_model
+from model import CommentSentimentModel, apply_model
 from utils import import_random_test_data
 from math import ceil
-from torch import Tensor, load as loadModel
+from torch import load as loadModel
 
 def print_page(page_num: int, data: list) -> None:
     for i in range(page_num*10, min(len(data), page_num*10+10)):
