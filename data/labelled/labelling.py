@@ -2,6 +2,7 @@ import json
 import os
 import openai
 import sys
+from typing import Union
 
 sys.path.append(os.getcwd()+'\\')
 
@@ -20,7 +21,7 @@ def get_train_comments(label_folder: str):
     return comment_list
 
 
-def label(api_key: str, comment_list: list[str], main_instruction: str, label_sentiment='none'):
+def label(api_key: str, comment_list: list[str], main_instruction: str, label_sentiment='none') -> list[dict[str, Union[str, dict[str, float]]]]:
     comment_clusters: list[str] = []
     current_cluster: list[str] = []
     curr_cluster_str_len = 0
@@ -85,7 +86,7 @@ if __name__ == '__main__':
     with open('./config.json', mode='r') as config_file:
         config = json.load(config_file)
     comments = get_train_comments('neg')
-    
+
     result = label(api_key=config['API_KEY'], comment_list=comments, main_instruction=config['gpt_instruction'], label_sentiment='neg')
     with open('./data/labelled/neg/labelled.json', 'w+') as json_out:
         json.dump(result, json_out)
