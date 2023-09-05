@@ -20,7 +20,7 @@ MODEL_NAME = 'bert-base-uncased'
 model = CommentSentimentModel()
 tokenizer: BertTokenizer = BertTokenizer.from_pretrained(MODEL_NAME)
 
-def apply_model(comment: str):
+def apply_model(comment: str, pre_model=model):
     print(f"Comment: \"{comment}\"")
     input_to_model = tokenizer.encode_plus(
         comment,
@@ -30,9 +30,8 @@ def apply_model(comment: str):
         return_tensors='pt',
         is_split_into_words=True,
     )
-    result: torch.Tensor = model(input_to_model.input_ids.to(GPU), input_to_model.attention_mask.to(GPU))[0]
-    print(vec_to_aspect(result.tolist()))
-    print()
+    result: torch.Tensor = pre_model(input_to_model.input_ids.to(GPU), input_to_model.attention_mask.to(GPU))[0]
+    return vec_to_aspect(result.tolist())
 
 def train():
     train_comments, train_labels = import_all_training_data()
@@ -61,12 +60,13 @@ def train():
         
         print(f'{epoch} / 50')
 
+if __name__ == '__main__':
+    train()
+    # testing
+    test_data = import_random_test_data()
+    for _ in range(10):
+        print(apply_model(pick_random(test_data)))
+        print()
 
-train()
-# testing
-test_data = import_random_test_data()
-for _ in range(10):
-    apply_model(pick_random(test_data))
-
-# storage
-torch.save(model, 'model1.pt')
+    # storage
+    torch.save(model, 'model1.pt')
