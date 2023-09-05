@@ -1,9 +1,13 @@
 import json
 import os
 import openai
+import sys
+
+sys.path.append(os.getcwd()+'\\')
+
 from utils import should_ignore
 
-def label(api_key: str, label_folder: str, main_instruction: str):
+def get_train_comments(label_folder: str):
     label_dir = os.path.join(os.getcwd(), 'data', 'labelled', label_folder)
     comment_list: list[str] = []
 
@@ -13,7 +17,10 @@ def label(api_key: str, label_folder: str, main_instruction: str):
             for comment in json.load(comments_json):
                 if should_ignore(comment): continue
                 comment_list.append(f"\"{comment}\"")
+    return comment_list
 
+
+def label(api_key: str, comment_list: list[str], main_instruction: str, label_sentiment='none'):
     comment_clusters: list[str] = []
     current_cluster: list[str] = []
     curr_cluster_str_len = 0
@@ -36,8 +43,8 @@ def label(api_key: str, label_folder: str, main_instruction: str):
     #     print()
 
     specific_instructions = {'pos': 'The comments are mostly positive, so treat ambiguous sentiments as positive', 'neg': 'The comments are mostly negative, so treat ambiguous sentiments as negative'}
-    if label_folder in specific_instructions:
-        main_instruction += f'\n{specific_instructions[label_folder]}'
+    if label_sentiment in specific_instructions:
+        main_instruction += f'\n{specific_instructions[label_sentiment]}'
 
     openai.api_key = api_key
     decoder = json.JSONDecoder()
@@ -70,12 +77,15 @@ def label(api_key: str, label_folder: str, main_instruction: str):
             print('request failed')
             continue
     
-    with open(f'{label_dir}/labelled.json', 'w+') as json_out:
-        json.dump(labelled_resp, json_out)
+    return labelled_resp
 
 
 if __name__ == '__main__':
     config: dict[str, str]
     with open('./config.json', mode='r') as config_file:
         config = json.load(config_file)
-    label(api_key=config['API_KEY'], main_instruction=config['gpt_instruction'], label_folder='neg')
+    comments = get_train_comments('neg')
+    
+    result = label(api_key=config['API_KEY'], comment_list=comments, main_instruction=config['gpt_instruction'], label_sentiment='neg')
+    with open('./data/labelled/neg/labelled.json', 'w+') as json_out:
+        json.dump(result, json_out)
