@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from torch import Tensor, device
 import numpy as np
 
-_comments_to_ignore = set(['No Positive', 'No Negative', 'All', 'Everything', 'everything', 'Nothing', 'nothing'])
+_comments_to_ignore = set(['No Positive', 'No Negative', 'All', 'Everything', 'everything', 'Nothing', 'nothing', 'NA', 'na', 'N A', 'N a'])
 ASPECTS = [
     'Cleanliness',
     'Food',
