@@ -6,7 +6,7 @@ from typing import Union
 
 sys.path.append(os.getcwd()+'\\')
 
-from utils import should_ignore
+from utils import should_ignore, get_config
 
 def get_train_comments(label_folder: str):
     label_dir = os.path.join(os.getcwd(), 'data', 'labelled', label_folder)
@@ -82,11 +82,9 @@ def label(api_key: str, comment_list: list[str], main_instruction: str, label_se
 
 
 if __name__ == '__main__':
-    config: dict[str, str]
-    with open('./config.json', mode='r') as config_file:
-        config = json.load(config_file)
+    config = get_config()
     comments = get_train_comments('neg')
 
-    result = label(api_key=config['API_KEY'], comment_list=comments, main_instruction=config['gpt_instruction'], label_sentiment='neg')
+    result = label(api_key=config['API_KEY'], comment_list=comments, main_instruction=config['label_instruction'], label_sentiment='neg')
     with open('./data/labelled/neg/labelled.json', 'w+') as json_out:
         json.dump(result, json_out)

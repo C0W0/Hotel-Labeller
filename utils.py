@@ -16,6 +16,14 @@ ASPECTS = [
     'Parking',
     'Security',
 ]
+ASPECTS_SUMMARY_ALIAS = {
+    'Cleanliness': 'Cleanliness',
+    'Food': 'Food',
+    'Service and Staff': 'Service and Staff',
+    'Amenities': 'Amenities and Facilities',
+    'Location': 'Location, View, and Transportation',
+    'Room Comfort': 'Room Comfort and Room Conditions',
+}
 GPU = device('cuda')
 
 def should_ignore(comment: str) -> bool:
@@ -82,6 +90,12 @@ def import_random_test_data() -> list[str]:
     _shuffle(comments)
 
     return comments
+
+def get_config() -> dict[str, str]:
+    config: dict[str, str]
+    with open('./config.json', mode='r') as config_file:
+        config = json.load(config_file)
+    return config
 
 class CommentDataSet(Dataset):
     def __init__(self, input_ids: Tensor, attention_mask: Tensor, labels: Tensor) -> None:
