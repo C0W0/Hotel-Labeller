@@ -17,13 +17,32 @@ ASPECTS = [
     'Security',
 ]
 ASPECTS_SUMMARY_ALIAS = {
-    'Cleanliness': 'Cleanliness',
+    'Cleanliness': 'Cleanliness and Hygiene',
     'Food': 'Food',
     'Service and Staff': 'Service and Staff',
     'Amenities': 'Amenities and Facilities',
-    'Location': 'Location, View, and Transportation',
-    'Room Comfort': 'Room Comfort and Room Conditions',
+    'Location': 'Location, View, Distance, and Transportation',
+    'Room Comfort': 'Room Comfort and Conditions',
 }
+ASPECTS_KEYWORDS = {
+    'Cleanliness': ['clean', 'dirty', 'dust'],
+    'Food': ['food', 'breakfast', 'lunch', 'dinner', 'restaurant', 'menu'],
+    'Service and Staff': ['service', 'staff'],
+    'Amenities': ['facility', 'facilities', 'wifi', 'gym', 'pool'],
+    'Location': ['location', 'view', 'distance', 'far', 'close', 'airport', 'station', 'remote'],
+    'Room Comfort': ['room', 'comfort' 'bed'],
+}
+SENTIMENT_KEYWORDS = {
+    'Generic': ['good', 'great', 'bad', 'poor', 'wonderful', 'awesome', 'amazing', 'terrible', 'nice', 'love'],
+    'Cleanliness': ['clean', 'dirty', 'infect', 'nasty'],
+    'Food': ['delicious'],
+    'Service and Staff': ['friendly'],
+    'Amenities': ['fun', 'fast'],
+    'Location': ['distant', 'far', 'close', 'remote'],
+    'Room Comfort': ['comfortable'],
+}
+UNCLEAR_KEYWORDS = ['All', 'Everything', 'everything', 'Nothing', 'nothing']
+
 GPU = device('cuda')
 
 def should_ignore(comment: str) -> bool:
@@ -32,6 +51,27 @@ def should_ignore(comment: str) -> bool:
 
 def pick_random(arr: list[any]) -> any:
     return arr[random.randint(0, len(arr)-1)]
+
+
+def cluster_comments(comment_list: list[str]) -> list[str]:
+    comment_clusters: list[str] = []
+    current_cluster: list[str] = []
+    curr_cluster_str_len = 0
+    for comment in comment_list:
+        current_cluster.append(comment)
+        curr_cluster_str_len += len(comment)
+
+        if curr_cluster_str_len >= 2500 or len(current_cluster) >= 10:
+            comment_clusters.append(',\n'.join(current_cluster))
+            current_cluster.clear()
+            curr_cluster_str_len = 0
+    
+    if curr_cluster_str_len != 0:
+        comment_clusters.append(',\n'.join(current_cluster))
+        current_cluster.clear()
+        curr_cluster_str_len = 0
+    
+    return comment_clusters
 
 
 def _shuffle(arr: list[any]) -> None:
