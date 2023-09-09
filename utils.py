@@ -74,7 +74,7 @@ def cluster_comments(comment_list: list[str]) -> list[str]:
     return comment_clusters
 
 
-def _shuffle(arr: list[any]) -> None:
+def shuffle(arr: list[any]) -> None:
     arr_len = len(arr)
     for i in range(arr_len):
         dest_index = random.randint(0, arr_len-1)
@@ -100,7 +100,7 @@ def import_all_training_data() -> tuple[list[str], np.ndarray]:
         reviews.extend(json.load(pos_json))
     with open('./data/labelled/neg/labelled.json', 'r') as neg_json:
         reviews.extend(json.load(neg_json))
-    _shuffle(reviews)
+    shuffle(reviews)
 
     comments: list[str] = []
     label_vecs: list[list[float]] = []
@@ -127,7 +127,7 @@ def import_random_test_data() -> list[str]:
         for comment in json.load(neg_json):
             if should_ignore(comment): continue
             comments.append(comment)
-    _shuffle(comments)
+    shuffle(comments)
 
     return comments
 
