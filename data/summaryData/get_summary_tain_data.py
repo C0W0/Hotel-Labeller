@@ -11,10 +11,12 @@ from data.labelled.labelling import label
 
 def write_to_local_json(pos_comments: dict[str, list[dict[str, Union[float, str]]]], neg_comments: dict[str, list[dict[str, Union[float, str]]]]) -> None:
     for aspect in ASPECTS_SUMMARY_ALIAS.keys():
-        with open(f'./data/summaryData/pos/{aspect}.json', mode='w+') as file_json:
-            json.dump(pos_comments[aspect], file_json, indent=2)
-        with open(f'./data/summaryData/neg/{aspect}.json', mode='w+') as file_json:
-            json.dump(neg_comments[aspect], file_json, indent=2)
+        if len(pos_comments) > 0:
+            with open(f'./data/summaryData/pos/{aspect}.json', mode='w+') as file_json:
+                json.dump(pos_comments[aspect], file_json, indent=2)
+        if len(neg_comments) > 0:
+            with open(f'./data/summaryData/neg/{aspect}.json', mode='w+') as file_json:
+                json.dump(neg_comments[aspect], file_json, indent=2)
 
 def label_using_gpt(config: dict[str, str]):
     test_data = import_random_test_data()
