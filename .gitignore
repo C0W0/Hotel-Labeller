@@ -159,9 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-data/negative/*
-data/positive/*
-data/labelled/**/*.json
+data/**/*.json
 data/Hotel_Reviews.csv
 
 config.json
