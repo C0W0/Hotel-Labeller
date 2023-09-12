@@ -2,7 +2,8 @@ import json
 import random
 import os
 from torch.utils.data import Dataset
-from torch import Tensor, device
+from torch import Tensor, device, tensor
+from transformers import GPT2Tokenizer
 import numpy as np
 
 _comments_to_ignore = set(['No Positive', 'No Negative', 'All', 'Everything', 'everything', 'Nothing', 'nothing', 'NA', 'na', 'N A', 'N a'])
@@ -150,5 +151,27 @@ class CommentDataSet(Dataset):
     def __getitem__(self, index) -> tuple[tuple[Tensor], Tensor]:
         return (self.x[index], self.masks[index]), self.y[index]
     
+    def __len__(self):
+        return self.n_sample
+
+class SummarizeDataSet(Dataset):
+    def __init__(self, texts: list[str], summaries: list[str], tokenizer: GPT2Tokenizer) -> None:
+        super().__init__()
+
+        self.text_data = texts
+        self.summary_data = summaries
+        self.tokenizer = tokenizer
+
+        self.n_sample = len(texts)
+
+    def __getitem__(self, index) -> tuple[tuple[Tensor], Tensor]:
+        text = self.text_data[index]
+        summary = self.summary_data[index]
+
+        tokenized_input = self.tokenizer.encode(text, add_special_tokens=True, max_length=min(512, self.tokenizer.model_max_length), pad_to_max_length=True, truncation=True, padding='max_length')
+        target_summary = self.tokenizer.encode(summary, add_special_tokens=True, max_length=512, pad_to_max_length=True, truncation=True, padding='max_length')
+
+        return (tensor(tokenized_input).to(GPU), tensor([1]*len(tokenized_input)).to(GPU)), tensor(target_summary).to(GPU)
+        
     def __len__(self):
         return self.n_sample
