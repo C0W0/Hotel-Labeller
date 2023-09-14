@@ -161,6 +161,7 @@ cython_debug/
 
 data/**/*.json
 data/Hotel_Reviews.csv
+summary_model_*/**
 
 config.json
 test.py
