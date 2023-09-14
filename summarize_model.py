@@ -1,13 +1,27 @@
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import PegasusTokenizer, AutoTokenizer, AutoModelForSeq2SeqLM, Seq2SeqTrainingArguments, Seq2SeqTrainer, PegasusForConditionalGeneration
 import torch
-from torch.utils.data import DataLoader
+import evaluate
 from utils import *
 
-MODEL_NAME = 'gpt2'
+rouge = evaluate.load('rouge')
 
-tokenizer: GPT2Tokenizer = GPT2Tokenizer.from_pretrained(MODEL_NAME)
-tokenizer.pad_token = tokenizer.eos_token
-model = GPT2LMHeadModel.from_pretrained(MODEL_NAME).to(GPU)
+MODEL_NAME = 'google/pegasus-cnn_dailymail'
+
+tokenizer: PegasusTokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model: PegasusForConditionalGeneration = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME).to(GPU)
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+
+    result = rouge.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+
+    prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
+    result["gen_len"] = np.mean(prediction_lens)
+
+    return {k: round(v, 4) for k, v in result.items()}
 
 def apply_model(comment: str, pre_model=model):
     print(f"Comment: \"{comment}\"")
@@ -15,34 +29,44 @@ def apply_model(comment: str, pre_model=model):
     result: torch.Tensor = pre_model.generate(input_to_model.to(GPU), max_length=100, num_return_sequences=1, no_repeat_ngram_size=2, top_k=50)
     return tokenizer.decode(result[0], skip_special_tokens=True)
 
-sources: list[str] = []
-summaries: list[str] = []
+imported_data: list[dict] = []
 for sentiment in ['pos', 'neg']:
     for aspect in ASPECTS_SUMMARY_ALIAS.keys():
         with open(f'./data/summaryData/summaries/{sentiment}/{aspect}.json', mode='r') as file_json:
-            test_data: list[dict] = json.load(file_json)
-            sources.extend(list(map(lambda data: ' '.join(data['source']), test_data)))
-            summaries.extend(list(map(lambda data: data['summary'], test_data)))
+            imported_data.extend(json.load(file_json))
+        break
+shuffle(imported_data)
+(test_data, train_data) = partition_data(imported_data, 0.1)
 
-dataset = SummarizeDataSet(sources, summaries, tokenizer)
-dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
+sources_test: list[str] = list(map(lambda data: ' '.join(data['source']), test_data))
+summaries_test: list[str] = list(map(lambda data: data['summary'], test_data))
+dataset_test = SummarizeDataSet(sources_test, summaries_test, tokenizer)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-5)
-criterion = torch.nn.CrossEntropyLoss()
+sources_train: list[str] = list(map(lambda data: ' '.join(data['source']), train_data))
+summaries_train: list[str] = list(map(lambda data: data['summary'], train_data))
+dataset_train = SummarizeDataSet(sources_train, summaries_train, tokenizer)
 
-for epoch in range(20):
-    model.train()
-    for (input, attention_mask), summary in dataloader:
-        # Forward pass
-        outputs = model(input, attention_mask=attention_mask, labels=summary)
-        loss = outputs.loss
+training_args = Seq2SeqTrainingArguments(
+    output_dir="./",
+    evaluation_strategy="epoch",
+    learning_rate=2e-5,
+    per_device_train_batch_size=5,
+    per_device_eval_batch_size=5,
+    weight_decay=0.01,
+    save_total_limit=3,
+    num_train_epochs=8,
+    predict_with_generate=True,
+    fp16=True,
+)
 
-        # Backward pass and optimization
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+trainer = Seq2SeqTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=dataset_train,
+    eval_dataset=dataset_test,
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics,
+)
 
-    print(f"Epoch {epoch + 1}: Loss {loss.item()}")
-
-
-torch.save(model.state_dict(), 'model_summarize.pt')
+trainer.train()
+trainer.save_model('./summary_model_01')

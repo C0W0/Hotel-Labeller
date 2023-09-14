@@ -3,7 +3,7 @@ import random
 import os
 from torch.utils.data import Dataset
 from torch import Tensor, device, tensor
-from transformers import GPT2Tokenizer
+from transformers import PegasusTokenizer
 import numpy as np
 
 _comments_to_ignore = set(['No Positive', 'No Negative', 'All', 'Everything', 'everything', 'Nothing', 'nothing', 'NA', 'na', 'N A', 'N a'])
@@ -138,6 +138,10 @@ def get_config() -> dict[str, str]:
         config = json.load(config_file)
     return config
 
+def partition_data(data: list, ratio: float):
+    part_index = int(len(data)*ratio)
+    return data[0:part_index], data[part_index:len(data)]
+
 class CommentDataSet(Dataset):
     def __init__(self, input_ids: Tensor, attention_mask: Tensor, labels: Tensor) -> None:
         super().__init__()
@@ -155,7 +159,7 @@ class CommentDataSet(Dataset):
         return self.n_sample
 
 class SummarizeDataSet(Dataset):
-    def __init__(self, texts: list[str], summaries: list[str], tokenizer: GPT2Tokenizer) -> None:
+    def __init__(self, texts: list[str], summaries: list[str], tokenizer: PegasusTokenizer) -> None:
         super().__init__()
 
         self.text_data = texts
@@ -164,14 +168,15 @@ class SummarizeDataSet(Dataset):
 
         self.n_sample = len(texts)
 
-    def __getitem__(self, index) -> tuple[tuple[Tensor], Tensor]:
+    def __getitem__(self, index):
         text = self.text_data[index]
         summary = self.summary_data[index]
 
-        tokenized_input = self.tokenizer.encode(text, add_special_tokens=True, max_length=min(512, self.tokenizer.model_max_length), pad_to_max_length=True, truncation=True, padding='max_length')
-        target_summary = self.tokenizer.encode(summary, add_special_tokens=True, max_length=512, pad_to_max_length=True, truncation=True, padding='max_length')
+        tokenized_input = self.tokenizer.encode_plus(text, add_special_tokens=True, max_length=min(512, self.tokenizer.model_max_length), pad_to_max_length=True, truncation=True, padding='max_length')
+        target_summary = self.tokenizer.encode_plus(summary, add_special_tokens=True, max_length=512, pad_to_max_length=True, truncation=True, padding='max_length')
+        tokenized_input['labels'] = target_summary['input_ids']
 
-        return (tensor(tokenized_input).to(GPU), tensor([1]*len(tokenized_input)).to(GPU)), tensor(target_summary).to(GPU)
+        return tokenized_input
         
     def __len__(self):
         return self.n_sample
